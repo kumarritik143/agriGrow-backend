@@ -13,6 +13,7 @@ connectDB();
 // Route files
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/productRoute');
+const adminRoutes = require('./routes/adminRoute');
 
 const app = express();
 
@@ -20,11 +21,17 @@ const app = express();
 app.use(express.json());
 
 // Enable CORS
-app.use(cors());
+// app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Mount routers
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Basic route
 app.get('/', (req, res) => {
