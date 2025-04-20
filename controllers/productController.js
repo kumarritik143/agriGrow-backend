@@ -1,128 +1,59 @@
-const Product = require('../models/Product');
+const Product = require("../models/Product");
+const cloudinary = require("../config/cloudinary");
 
-// @desc    Get all products
-// @route   GET /api/products
-// @access  Public
-exports.getProducts = async (req, res) => {
-  try {
-    const products = await Product.find();
-    res.status(200).json({
-      success: true,
-      count: products.length,
-      data: products
-    });
-  } catch (error) {
-    console.error('Get products error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
-  }
-};
-
-// @desc    Get single product
-// @route   GET /api/products/:id
-// @access  Public
-exports.getProduct = async (req, res) => {
-  try {
-    const product = await Product.findById(req.params.id);
-    
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      data: product
-    });
-  } catch (error) {
-    console.error('Get product error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
-  }
-};
-
-// @desc    Create new product
-// @route   POST /api/products
-// @access  Private (Admin only)
 exports.createProduct = async (req, res) => {
   try {
-    const product = await Product.create(req.body);
+    const { name, price, description, brand, imageBase64 } = req.body;
+
+    if (!name || !price || !imageBase64) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide all required fields",
+      });
+    }
+
+    // Upload image to Cloudinary with timeout and optimization settings
+    const uploadResponse = await cloudinary.uploader.upload(imageBase64, {
+      upload_preset: "agriGrow",
+      timeout: 120000, // Increase timeout to 120 seconds
+      transformation: [
+        { width: 1024, height: 1024, crop: "limit" }, // Limit image size
+        { quality: "auto:good" }, // Optimize quality
+        { fetch_format: "auto" }, // Auto-select best format
+      ],
+    });
+
+    // Create product
+    const product = await Product.create({
+      name,
+      price: Number(price),
+      description,
+      brand,
+      imageUrl: uploadResponse.secure_url,
+      category: "Other",
+      stock: 0,
+    });
+
     res.status(201).json({
       success: true,
-      data: product
+      data: product,
     });
   } catch (error) {
-    console.error('Create product error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
-  }
-};
+    console.error("Create product error:", error);
 
-// @desc    Update product
-// @route   PUT /api/products/:id
-// @access  Private (Admin only)
-exports.updateProduct = async (req, res) => {
-  try {
-    let product = await Product.findById(req.params.id);
-    
-    if (!product) {
-      return res.status(404).json({
+    // Handle specific Cloudinary errors
+    if (error.name === "TimeoutError") {
+      return res.status(408).json({
         success: false,
-        message: 'Product not found'
+        message: "Image upload timed out. Please try with a smaller image.",
       });
     }
 
-    product = await Product.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true
-    });
-
-    res.status(200).json({
-      success: true,
-      data: product
-    });
-  } catch (error) {
-    console.error('Update product error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: "Server Error",
+      error: error.message,
     });
   }
 };
 
-// @desc    Delete product
-// @route   DELETE /api/products/:id
-// @access  Private (Admin only)
-exports.deleteProduct = async (req, res) => {
-  try {
-    const product = await Product.findById(req.params.id);
-    
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
-    }
-
-    await product.remove();
-
-    res.status(200).json({
-      success: true,
-      message: 'Product deleted'
-    });
-  } catch (error) {
-    console.error('Delete product error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
-  }
-};
