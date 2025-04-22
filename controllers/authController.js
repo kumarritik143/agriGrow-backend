@@ -1,11 +1,12 @@
 // controllers/authController.js
-const User = require('../models/User');
-const jwt = require('jsonwebtoken');
+const User = require("../models/User");
+const jwt = require("jsonwebtoken");
+const cloudinary = require("cloudinary").v2;
 
 // Generate JWT Token
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '30d'
+    expiresIn: "30d",
   });
 };
 
@@ -18,11 +19,11 @@ exports.registerUser = async (req, res) => {
 
     // Check if user exists
     const userExists = await User.findOne({ email });
-    
+
     if (userExists) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: 'User already exists' 
+        message: "User already exists",
       });
     }
 
@@ -30,7 +31,7 @@ exports.registerUser = async (req, res) => {
     const user = await User.create({
       fullName,
       email,
-      password
+      password,
     });
 
     if (user) {
@@ -39,21 +40,21 @@ exports.registerUser = async (req, res) => {
         user: {
           _id: user._id,
           fullName: user.fullName,
-          email: user.email
+          email: user.email,
         },
-        token: generateToken(user._id)
+        token: generateToken(user._id),
       });
     } else {
-      res.status(400).json({ 
+      res.status(400).json({
         success: false,
-        message: 'Invalid user data' 
+        message: "Invalid user data",
       });
     }
   } catch (error) {
-    console.error('Register error:', error);
+    console.error("Register error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: "Server error",
     });
   }
 };
@@ -66,22 +67,22 @@ exports.loginUser = async (req, res) => {
     const { email, password } = req.body;
 
     // Check for user email
-    const user = await User.findOne({ email }).select('+password');
-    
+    const user = await User.findOne({ email }).select("+password");
+
     if (!user) {
-      return res.status(401).json({ 
+      return res.status(401).json({
         success: false,
-        message: 'Invalid credentials' 
+        message: "Invalid credentials",
       });
     }
 
     // Check if password matches
     const isMatch = await user.matchPassword(password);
-    
+
     if (!isMatch) {
-      return res.status(401).json({ 
+      return res.status(401).json({
         success: false,
-        message: 'Invalid credentials' 
+        message: "Invalid credentials",
       });
     }
 
@@ -90,15 +91,15 @@ exports.loginUser = async (req, res) => {
       user: {
         _id: user._id,
         fullName: user.fullName,
-        email: user.email
+        email: user.email,
       },
-      token: generateToken(user._id)
+      token: generateToken(user._id),
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error("Login error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: "Server error",
     });
   }
 };
@@ -109,20 +110,60 @@ exports.loginUser = async (req, res) => {
 exports.getCurrentUser = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-    
+
     res.status(200).json({
       success: true,
       user: {
         _id: user._id,
         fullName: user.fullName,
-        email: user.email
-      }
+        email: user.email,
+      },
     });
   } catch (error) {
-    console.error('Get current user error:', error);
+    console.error("Get current user error:", error);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: "Server error",
+    });
+  }
+};
+
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+exports.updateProfile = async (req, res) => {
+  try {
+    const { imageBase64 } = req.body;
+
+    // Upload image to Cloudinary if provided
+    let profileImage = null;
+    if (imageBase64) {
+      const uploadResponse = await cloudinary.uploader.upload(imageBase64, {
+        folder: "user_profiles",
+        transformation: [
+          { width: 400, height: 400, crop: "fill" },
+          { quality: "auto" },
+        ],
+      });
+      profileImage = uploadResponse.secure_url;
+    }
+
+    // Update user profile
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { profileImage },
+      { new: true }
+    ).select("-password");
+
+    res.json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update profile",
     });
   }
 };
