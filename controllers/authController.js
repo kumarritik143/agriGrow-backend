@@ -41,6 +41,7 @@ exports.registerUser = async (req, res) => {
           _id: user._id,
           fullName: user.fullName,
           email: user.email,
+          createdAt: user.createdAt,
         },
         token: generateToken(user._id),
       });
@@ -92,6 +93,7 @@ exports.loginUser = async (req, res) => {
         _id: user._id,
         fullName: user.fullName,
         email: user.email,
+        createdAt: user.createdAt,
       },
       token: generateToken(user._id),
     });
@@ -117,6 +119,7 @@ exports.getCurrentUser = async (req, res) => {
         _id: user._id,
         fullName: user.fullName,
         email: user.email,
+        createdAt: user.createdAt,
       },
     });
   } catch (error) {

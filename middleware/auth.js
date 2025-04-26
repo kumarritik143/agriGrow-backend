@@ -1,6 +1,7 @@
 // middleware/auth.js
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const Admin = require('../models/Admin');
 
 exports.protect = async (req, res, next) => {
   try {
@@ -23,8 +24,20 @@ exports.protect = async (req, res, next) => {
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       
-      // Add user to request object
-      req.user = await User.findById(decoded.id);
+      // Check if the token is for an admin or user
+      if (decoded.role === 'admin') {
+        req.user = await Admin.findById(decoded.id);
+      } else {
+        req.user = await User.findById(decoded.id);
+      }
+
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
       next();
     } catch (error) {
       return res.status(401).json({

@@ -22,6 +22,11 @@ const productSchema = new mongoose.Schema({
     type: String,
     required: [true, "Please provide product brand"],
   },
+  addedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Admin',
+    required: true
+  },
   createdAt: {
     type: Date,
     default: Date.now,

@@ -32,6 +32,7 @@ exports.createProduct = async (req, res) => {
       imageUrl: uploadResponse.secure_url,
       category: "Other",
       stock: 0,
+      addedBy: req.user._id
     });
 
     res.status(201).json({
@@ -71,6 +72,101 @@ exports.getProducts = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Server Error",
+    });
+  }
+};
+
+// Fetch products added by the logged-in admin
+exports.getAdminProducts = async (req, res) => {
+  try {
+    const products = await Product.find({ addedBy: req.user._id }).sort({
+      createdAt: -1,
+    });
+
+    res.status(200).json({
+      success: true,
+      count: products.length,
+      data: products,
+    });
+  } catch (error) {
+    console.error("Get admin products error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
+// Update a product
+exports.updateProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, price, description, brand, imageBase64 } = req.body;
+
+    const product = await Product.findOne({ _id: id, addedBy: req.user._id });
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found or not authorized to update",
+      });
+    }
+
+    // If a new image is provided, upload it to Cloudinary
+    if (imageBase64) {
+      const uploadResponse = await cloudinary.uploader.upload(imageBase64, {
+        upload_preset: "agriGrow",
+      });
+      product.imageUrl = uploadResponse.secure_url;
+    }
+
+    // Update product fields
+    product.name = name || product.name;
+    product.price = price || product.price;
+    product.description = description || product.description;
+    product.brand = brand || product.brand;
+
+    await product.save();
+
+    res.status(200).json({
+      success: true,
+      data: product,
+    });
+  } catch (error) {
+    console.error("Update product error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
+exports.deleteProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find the product and verify it belongs to the admin
+    const product = await Product.findOne({ _id: id, addedBy: req.user._id });
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found or not authorized to delete"
+      });
+    }
+
+    // Delete the product
+    await Product.findByIdAndDelete(id);
+
+    res.status(200).json({
+      success: true,
+      message: "Product deleted successfully"
+    });
+  } catch (error) {
+    console.error("Delete product error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server Error"
     });
   }
 };
