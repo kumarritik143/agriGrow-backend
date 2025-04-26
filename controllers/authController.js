@@ -93,6 +93,7 @@ exports.loginUser = async (req, res) => {
         _id: user._id,
         fullName: user.fullName,
         email: user.email,
+        profileImage: user.profileImage,
         createdAt: user.createdAt,
       },
       token: generateToken(user._id),
@@ -119,6 +120,7 @@ exports.getCurrentUser = async (req, res) => {
         _id: user._id,
         fullName: user.fullName,
         email: user.email,
+        profileImage: user.profileImage,
         createdAt: user.createdAt,
       },
     });
@@ -138,23 +140,29 @@ exports.updateProfile = async (req, res) => {
   try {
     const { imageBase64 } = req.body;
 
-    // Upload image to Cloudinary if provided
-    let profileImage = null;
-    if (imageBase64) {
-      const uploadResponse = await cloudinary.uploader.upload(imageBase64, {
-        folder: "user_profiles",
-        transformation: [
-          { width: 400, height: 400, crop: "fill" },
-          { quality: "auto" },
-        ],
+    // Only proceed with image update if a new image is provided
+    if (!imageBase64) {
+      return res.status(400).json({
+        success: false,
+        message: "No image provided",
       });
-      profileImage = uploadResponse.secure_url;
     }
 
-    // Update user profile
+    // Upload image to Cloudinary
+    const public_id = `user_profiles/${req.user._id}_${Date.now()}`;
+    const uploadResponse = await cloudinary.uploader.upload(imageBase64, {
+      public_id: public_id,
+      folder: "user_profiles",
+      transformation: [
+        { width: 400, height: 400, crop: "fill" },
+        { quality: "auto" },
+      ],
+    });
+
+    // Update user profile with the new image URL
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { profileImage },
+      { profileImage: uploadResponse.secure_url },
       { new: true }
     ).select("-password");
 

@@ -30,7 +30,7 @@ const userSchema = new mongoose.Schema(
     },
     profileImage: {
       type: String,
-      default: "", // This will store the Cloudinary URL
+      default: null, // Changed from empty string to null
     },
   },
   {
