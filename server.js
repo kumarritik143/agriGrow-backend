@@ -3,6 +3,8 @@ const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const connectDB = require("./config/db");
+const http = require('http');
+const socketIo = require('socket.io');
 
 // Load env vars
 dotenv.config();
@@ -16,6 +18,14 @@ const productRoutes = require("./routes/productRoute");
 const adminRoutes = require("./routes/adminRoute");
 
 const app = express();
+
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
 
 // Increase payload size limit - add this before other middleware
 app.use(express.json({ limit: "50mb" }));
@@ -32,12 +42,17 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
 // Mount routers
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/admin", adminRoutes);
 
+const chatRoutes = require('./routes/chatRoute');
+app.use('/api/chat', chatRoutes);
 // Basic route
 app.get("/", (req, res) => {
   res.send("AgriGrow API is running...");
