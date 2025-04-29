@@ -27,6 +27,21 @@ const io = socketIo(server, {
   }
 });
 
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log('New client connected');
+
+  // Handle joining chat rooms
+  socket.on('joinRoom', (roomId) => {
+    socket.join(roomId);
+    console.log(`Client joined room: ${roomId}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected');
+  });
+});
+
 // Increase payload size limit - add this before other middleware
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
@@ -69,6 +84,6 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5001;
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

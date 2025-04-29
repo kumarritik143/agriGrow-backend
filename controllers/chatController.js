@@ -22,8 +22,11 @@ exports.sendMessage = async (req, res) => {
       .populate('sender', 'fullName email')
       .populate('receiver', 'fullName email');
 
-    // Emit the message through Socket.IO
-    req.io.emit('newMessage', {
+    // Create a unique room ID for the chat between these two users
+    const roomId = [senderId, receiverId].sort().join('_');
+
+    // Emit the message to the specific room
+    req.io.to(roomId).emit('newMessage', {
       _id: newMessage._id,
       senderId,
       receiverId,
