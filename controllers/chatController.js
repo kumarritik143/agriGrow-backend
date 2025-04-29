@@ -9,6 +9,14 @@ exports.sendMessage = async (req, res) => {
     const senderModel = req.user.role === 'admin' ? 'Admin' : 'User';
     const receiverModel = senderModel === 'Admin' ? 'User' : 'Admin';
 
+    console.log('Creating new message:', {
+      senderId,
+      receiverId,
+      message,
+      senderModel,
+      receiverModel
+    });
+
     const newMessage = await Chat.create({
       sender: senderId,
       senderModel,
@@ -24,9 +32,21 @@ exports.sendMessage = async (req, res) => {
 
     // Create a unique room ID for the chat between these two users
     const roomId = [senderId, receiverId].sort().join('_');
+    console.log('Emitting message to room:', roomId);
 
     // Emit the message to the specific room
     req.io.to(roomId).emit('newMessage', {
+      _id: newMessage._id,
+      senderId,
+      receiverId,
+      message,
+      timestamp: newMessage.timestamp,
+      sender: populatedMessage.sender,
+      receiver: populatedMessage.receiver
+    });
+
+    // Also emit to the sender's socket to ensure they receive their own message
+    req.io.emit('newMessage', {
       _id: newMessage._id,
       senderId,
       receiverId,

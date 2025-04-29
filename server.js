@@ -29,16 +29,21 @@ const io = socketIo(server, {
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
-  console.log('New client connected');
+  console.log('New client connected with ID:', socket.id);
 
   // Handle joining chat rooms
   socket.on('joinRoom', (roomId) => {
     socket.join(roomId);
-    console.log(`Client joined room: ${roomId}`);
+    console.log(`Client ${socket.id} joined room: ${roomId}`);
   });
 
   socket.on('disconnect', () => {
-    console.log('Client disconnected');
+    console.log('Client disconnected:', socket.id);
+  });
+
+  // Log any errors
+  socket.on('error', (error) => {
+    console.error('Socket error:', error);
   });
 });
 
