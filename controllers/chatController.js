@@ -78,6 +78,11 @@ exports.getChatParticipants = async (req, res) => {
     const userId = req.user._id;
     const userRole = req.user.role === 'admin' ? 'Admin' : 'User';
 
+    console.log('Getting participants for:', {
+      userId,
+      userRole
+    });
+
     let participants;
     if (userRole === 'Admin') {
       // For admin, get users who have chatted with this admin
@@ -86,19 +91,58 @@ exports.getChatParticipants = async (req, res) => {
           { sender: userId },
           { receiver: userId }
         ]
-      }).distinct('sender');
+      });
+
+      // Get unique user IDs from chats
+      const userIds = [...new Set(chats.map(chat => 
+        chat.sender.toString() === userId.toString() ? chat.receiver : chat.sender
+      ))];
 
       participants = await User.find({
-        _id: { $in: chats }
+        _id: { $in: userIds }
       }).select('fullName email profileImage');
+
+      console.log('Users who have chatted with admin:', JSON.stringify(participants, null, 2));
     } else {
       // For users, get all admins
-      participants = await Admin.find().select('email');
+      participants = await Admin.find({}, 'name email');
+      
+      // Log each admin's data separately
+      console.log('Admins found in database:', participants.length);
+      participants.forEach(admin => {
+        console.log(`Admin data - ID: ${admin._id}, Name: ${admin.name}, Email: ${admin.email}`);
+      });
     }
+
+    // Transform the data
+    const formattedParticipants = participants.map(participant => {
+      if (userRole === 'Admin') {
+        // For admin's view, show user's fullName
+        return {
+          _id: participant._id,
+          name: participant.fullName,
+          email: participant.email,
+          profileImage: participant.profileImage,
+          isAdmin: false
+        };
+      } else {
+        // For user's view, show admin's name
+        const formattedAdmin = {
+          _id: participant._id,
+          name: participant.name || participant.email, // Fallback to email if name is missing
+          email: participant.email,
+          isAdmin: true
+        };
+        console.log(`Formatted admin data:`, formattedAdmin);
+        return formattedAdmin;
+      }
+    });
+
+    console.log('Final formatted participants:', JSON.stringify(formattedParticipants, null, 2));
 
     res.status(200).json({
       success: true,
-      data: participants
+      data: formattedParticipants
     });
   } catch (error) {
     console.error('Get chat participants error:', error);
