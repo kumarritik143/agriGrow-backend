@@ -24,11 +24,12 @@ const io = socketIo(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"]
-  }
+  },
+  path: '/socket.io'
 });
 
 // Socket.IO connection handling
-io.on('connection', (socket) => {
+io.of('/').on('connection', (socket) => {
   console.log('New client connected with ID:', socket.id);
 
   // Handle joining chat rooms
