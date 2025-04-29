@@ -25,11 +25,12 @@ const io = socketIo(server, {
     origin: "*",
     methods: ["GET", "POST"]
   },
-  path: '/socket.io'
+  path: '/socket.io',
+  transports: ['websocket']
 });
 
 // Socket.IO connection handling
-io.of('/').on('connection', (socket) => {
+io.on('connection', (socket) => {
   console.log('New client connected with ID:', socket.id);
 
   // Handle joining chat rooms
