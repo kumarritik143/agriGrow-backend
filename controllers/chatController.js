@@ -34,19 +34,8 @@ exports.sendMessage = async (req, res) => {
     const roomId = [senderId, receiverId].sort().join('_');
     console.log('Emitting message to room:', roomId);
 
-    // Emit the message to the specific room
+    // Emit the message only once to the specific room
     req.io.to(roomId).emit('newMessage', {
-      _id: newMessage._id,
-      senderId,
-      receiverId,
-      message,
-      timestamp: newMessage.timestamp,
-      sender: populatedMessage.sender,
-      receiver: populatedMessage.receiver
-    });
-
-    // Also emit to the sender's socket to ensure they receive their own message
-    req.io.emit('newMessage', {
       _id: newMessage._id,
       senderId,
       receiverId,

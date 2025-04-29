@@ -17,8 +17,8 @@ const createAdmin = async () => {
     });
 
     const adminData = {
-      name: 'Shivam Kumar',
-      email: 'shivam@gmail.com',
+      name: 'Devanshu',
+      email: 'devanshu@gmail.com',
       password: '12345@abc',
       role: 'admin'
     };
