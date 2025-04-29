@@ -26,8 +26,10 @@ const io = socketIo(server, {
     methods: ["GET", "POST"]
   },
   path: '/socket.io',
-  transports: ['websocket'],
-  allowEIO3: true
+  transports: ['websocket', 'polling'],
+  allowEIO3: true,
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
 
 // Socket.IO connection handling
