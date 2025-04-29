@@ -34,7 +34,7 @@ exports.sendMessage = async (req, res) => {
     const roomId = [senderId, receiverId].sort().join('_');
     console.log('Emitting message to room:', roomId);
 
-    // Emit the message only once to the specific room
+    // Emit the message to the specific room
     req.io.to(roomId).emit('newMessage', {
       _id: newMessage._id,
       senderId,
@@ -45,9 +45,18 @@ exports.sendMessage = async (req, res) => {
       receiver: populatedMessage.receiver
     });
 
+    // Return the populated message in the response
     res.status(201).json({
       success: true,
-      data: newMessage
+      data: {
+        _id: newMessage._id,
+        senderId,
+        receiverId,
+        message,
+        timestamp: newMessage.timestamp,
+        sender: populatedMessage.sender,
+        receiver: populatedMessage.receiver
+      }
     });
   } catch (error) {
     console.error('Send message error:', error);
