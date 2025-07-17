@@ -32,6 +32,17 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: null, // Changed from empty string to null
     },
+    address: {
+      name: { type: String },
+      phone: { type: String },
+      pincode: { type: String },
+      state: { type: String },
+      city: { type: String },
+      houseNumber: { type: String },
+      village: { type: String },
+      areaName: { type: String },
+      nearby: { type: String },
+    },
   },
   {
     timestamps: true,

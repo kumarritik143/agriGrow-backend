@@ -122,6 +122,7 @@ exports.getCurrentUser = async (req, res) => {
         email: user.email,
         profileImage: user.profileImage,
         createdAt: user.createdAt,
+        address: user.address, // Return address
       },
     });
   } catch (error) {
@@ -138,31 +139,39 @@ exports.getCurrentUser = async (req, res) => {
 // @access  Private
 exports.updateProfile = async (req, res) => {
   try {
-    const { imageBase64 } = req.body;
+    const { imageBase64, address } = req.body;
+    const updateFields = {};
 
-    // Only proceed with image update if a new image is provided
-    if (!imageBase64) {
+    // Only update image if provided
+    if (imageBase64) {
+      // Upload image to Cloudinary
+      const public_id = `user_profiles/${req.user._id}_${Date.now()}`;
+      const uploadResponse = await cloudinary.uploader.upload(imageBase64, {
+        public_id: public_id,
+        folder: "user_profiles",
+        transformation: [
+          { width: 400, height: 400, crop: "fill" },
+          { quality: "auto" },
+        ],
+      });
+      updateFields.profileImage = uploadResponse.secure_url;
+    }
+
+    // Only update address if provided
+    if (address) {
+      updateFields.address = address;
+    }
+
+    if (Object.keys(updateFields).length === 0) {
       return res.status(400).json({
         success: false,
-        message: "No image provided",
+        message: "No data provided to update",
       });
     }
 
-    // Upload image to Cloudinary
-    const public_id = `user_profiles/${req.user._id}_${Date.now()}`;
-    const uploadResponse = await cloudinary.uploader.upload(imageBase64, {
-      public_id: public_id,
-      folder: "user_profiles",
-      transformation: [
-        { width: 400, height: 400, crop: "fill" },
-        { quality: "auto" },
-      ],
-    });
-
-    // Update user profile with the new image URL
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { profileImage: uploadResponse.secure_url },
+      updateFields,
       { new: true }
     ).select("-password");
 

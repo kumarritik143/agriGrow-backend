@@ -16,6 +16,8 @@ connectDB();
 const authRoutes = require("./routes/auth");
 const productRoutes = require("./routes/productRoute");
 const adminRoutes = require("./routes/adminRoute");
+const orderRoutes = require("./routes/orderRoute");
+const paymentRoutes = require("./routes/paymentRoute");
 
 const app = express();
 
@@ -75,6 +77,8 @@ app.use((req, res, next) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/orders", orderRoutes);
+app.use("/api/payment", paymentRoutes);
 
 const chatRoutes = require('./routes/chatRoute');
 app.use('/api/chat', chatRoutes);
